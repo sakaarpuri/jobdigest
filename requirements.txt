@@ -1,0 +1,4 @@
+feedparser
+sendgrid
+requests
+beautifulsoup4
