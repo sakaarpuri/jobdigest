@@ -158,7 +158,7 @@ def build_html(ai_jobs, film_jobs, scraped_jobs):
     ])
     return f'''<html><body style="font-family:sans-serif;max-width:620px;margin:auto;">
       <div style="background:#111;padding:20px;border-radius:8px 8px 0 0;">
-        <h2 style="color:#fff;margin:0;">🎬 Daily Job Digest</h2>
+        <h2 style="color:#fff;margin:0;">Daily Job Digest</h2>
         <p style="color:#aaa;margin:4px 0 0;">{today} · {total} new listings</p>
       </div>
       <div style="padding:20px;border:1px solid #eee;border-radius:0 0 8px 8px;">
@@ -167,15 +167,42 @@ def build_html(ai_jobs, film_jobs, scraped_jobs):
       </div></body></html>'''
 
 
-def send_email(html, total):
-    subject = f'🎬 {total} New Job{"s" if total != 1 else ""} Today — {datetime.now(timezone.utc).strftime("%b %d")}'
+def build_text(ai_jobs, film_jobs, scraped_jobs):
+    today = datetime.now(timezone.utc).strftime('%B %d, %Y')
+    total = len(ai_jobs) + len(film_jobs) + len(scraped_jobs)
+
+    def section(title, jobs):
+        if not jobs:
+            return f'{title}\nNo new listings today.\n'
+        rows = []
+        for job in jobs[:5]:
+            company = f" - {job.get('company', '')}" if job.get('company') else ''
+            source = f" [{job.get('source', '')}]" if job.get('source') else ''
+            rows.append(f"- {job['title']}{company}{source}\n  {job['link']}")
+        return f'{title}\n' + '\n'.join(rows) + '\n'
+
+    parts = [
+        f'Daily Job Digest',
+        f'{today} | {total} new listings',
+        '',
+        section('AI Video Jobs', ai_jobs),
+        section('Film & Video Production', film_jobs),
+        section('UK Production Boards', scraped_jobs),
+        'Sent daily via GitHub Actions.',
+    ]
+    return '\n'.join(parts)
+
+
+def send_email(html, text, total):
+    subject = f'Daily Job Digest: {total} new job{"s" if total != 1 else ""} ({datetime.now(timezone.utc).strftime("%b %d")})'
     if total == 0:
-        subject = f'🎬 Job Digest — No new listings ({datetime.now(timezone.utc).strftime("%b %d")})'
+        subject = f'Daily Job Digest: no new listings ({datetime.now(timezone.utc).strftime("%b %d")})'
     recipients = [email.strip() for email in os.environ['RECIPIENT_EMAIL'].split(',') if email.strip()]
     message = Mail(
         from_email='ea2sakaar@agentmail.to',
         to_emails=recipients,
         subject=subject,
+        plain_text_content=text,
         html_content=html
     )
     sg = SendGridAPIClient(os.environ['SENDGRID_API_KEY'])
@@ -212,5 +239,6 @@ if __name__ == '__main__':
 
     total = len(ai_jobs) + len(film_jobs) + len(scraped_jobs)
     html = build_html(ai_jobs, film_jobs, scraped_jobs)
-    send_email(html, total)
+    text = build_text(ai_jobs, film_jobs, scraped_jobs)
+    send_email(html, text, total)
     commit_seen_jobs()
