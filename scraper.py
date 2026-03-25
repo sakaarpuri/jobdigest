@@ -173,7 +173,7 @@ def send_email(html, total):
         subject = f'🎬 Job Digest — No new listings ({datetime.now(timezone.utc).strftime("%b %d")})'
     recipients = [email.strip() for email in os.environ['RECIPIENT_EMAIL'].split(',') if email.strip()]
     message = Mail(
-        from_email='puri.sakaar@gmail.com',
+        from_email='ea2sakaar@agentmail.to',
         to_emails=recipients,
         subject=subject,
         html_content=html
