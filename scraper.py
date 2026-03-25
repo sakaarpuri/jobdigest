@@ -194,10 +194,14 @@ def build_text(ai_jobs, film_jobs, scraped_jobs):
 
 
 def send_email(html, text, total):
-    subject = f'Daily Job Digest: {total} new job{"s" if total != 1 else ""} ({datetime.now(timezone.utc).strftime("%b %d")})'
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    debug_suffix = f" [{timestamp}]" if os.environ.get("DEBUG_EMAIL_SUBJECT") == "1" else ""
+    subject = f'Daily Job Digest: {total} new job{"s" if total != 1 else ""} ({datetime.now(timezone.utc).strftime("%b %d")}){debug_suffix}'
     if total == 0:
-        subject = f'Daily Job Digest: no new listings ({datetime.now(timezone.utc).strftime("%b %d")})'
+        subject = f'Daily Job Digest: no new listings ({datetime.now(timezone.utc).strftime("%b %d")}){debug_suffix}'
     recipients = [email.strip() for email in os.environ['RECIPIENT_EMAIL'].split(',') if email.strip()]
+    print(f"Sending to: {', '.join(recipients)}")
+    print(f"Subject: {subject}")
     message = Mail(
         from_email='ea2sakaar@agentmail.to',
         to_emails=recipients,
